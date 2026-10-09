@@ -1,42 +1,45 @@
-name: Compile Ubuntu
+name: Build and test
 
 on:
-  - push
-  - pull_request
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-
     strategy:
       fail-fast: false
-
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04, ubuntu-22.04]
-
-    env:
-      BUILD_DIR: build
-      DEBIAN_FRONTEND: noninteractive
+        os: [ubuntu-22.04, ubuntu-24.04]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libncurses5-dev libncursesw5-dev libdrm-dev libsystemd-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libncurses-dev
 
-    - name: Configure CMake
-      run: cmake -S . -B $BUILD_DIR
+      - name: Configure
+        run: >-
+          cmake -S . -B build
+          -DGAUDI_SUPPORT=ON
+          -DHLTOP_GAUDI_ONLY=ON
+          -DBUILD_TESTING=ON
+          -DCMAKE_BUILD_TYPE=Release
 
-    - name: Build
-      run: cmake --build $BUILD_DIR
+      - name: Build
+        run: cmake --build build -j "$(nproc)"
 
-    - name: Install
-      run: DESTDIR="$PWD/build/install" cmake --build $BUILD_DIR --target install
-      
-    - name: Upload
-      uses: actions/upload-artifact@v4
-      with:
-        name: nvtop ${{ matrix.os }}
-        path: ${{ env.BUILD_DIR }}/install
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Package
+        run: cpack --config build/CPackConfig.cmake -G DEB -B packages
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hltop-${{ matrix.os }}-amd64
+          path: packages/*.deb

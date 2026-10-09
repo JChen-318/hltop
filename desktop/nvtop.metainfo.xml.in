@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="console-application">
-    <id>io.github.syllo.nvtop</id>
+    <id>io.github.jchen_318.hltop</id>
 
-    <name>nvtop</name>
-    <summary>GPU process monitor for AMD, Intel and NVIDIA</summary>
+    <name>hltop</name>
+    <summary>Intel Gaudi accelerator process monitor</summary>
 
     <metadata_license>CC0-1.0</metadata_license>
     <project_license>GPL-3.0-or-later</project_license>
-    <developer_name>Maxime Schmitt</developer_name>
+    <developer_name>JChen-318 and nvtop contributors</developer_name>
 
     <description>
-        <p>Nvtop stands for Neat Videocard TOP, a (h)top like task monitor for AMD, Intel and NVIDIA GPUs. It can handle multiple GPUs and print information about them in a htop familiar way.</p>
+        <p>Hltop is an nvtop-based, htop-like task monitor for Intel Gaudi accelerators. It handles multiple AIPs and keeps nvtop's familiar terminal interface.</p>
     </description>
 
-    <launchable type="desktop-id">nvtop.desktop</launchable>
+    <launchable type="desktop-id">hltop.desktop</launchable>
 
     <icon type="cached">nvtop.svg</icon>
 
@@ -22,7 +22,7 @@
         <category>Monitor</category>
     </categories>
 
-    <url type="homepage">https://github.com/Syllo/nvtop</url>
+    <url type="homepage">https://github.com/JChen-318/hltop</url>
 
     <screenshots>
         <screenshot type="default">
@@ -36,9 +36,9 @@
     </screenshots>
 
     <provides>
-        <binary>nvtop</binary>
+        <binary>hltop</binary>
     </provides>
     <releases>
-    <release version="@nvtop_VERSION_MAJOR@.@nvtop_VERSION_MINOR@.@nvtop_VERSION_PATCH@" date="@TODAY_ISO_8601@"></release>
+    <release version="@PROJECT_VERSION@" date="@TODAY_ISO_8601@"></release>
     </releases>
 </component>

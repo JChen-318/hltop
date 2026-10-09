@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.18)
 #                              PROJECT                              #
 #///////////////////////////////////////////////////////////////////#
 
-project(nvtop VERSION 3.3.2
+project(hltop VERSION 0.1.0
   LANGUAGES C CXX)
 
 set(default_build_type "Release")
@@ -17,6 +17,10 @@ endif()
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
   "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# This fork builds the Gaudi-oriented hltop binary by default. Set this to OFF
+# to restore nvtop's original multi-vendor default backend selection.
+option(HLTOP_GAUDI_ONLY "Build only the Intel Gaudi backend by default" ON)
 
 #///////////////////////////////////////////////////////////////////#
 #                           DEPENDENCIES                            #
@@ -73,6 +77,7 @@ if(APPLE)
   set(ASCEND_SUPPORT_DEFAULT OFF)
   set(METAX_SUPPORT_DEFAULT OFF)
   set(IXML_SUPPORT_DEFAULT OFF)
+  set(GAUDI_SUPPORT_DEFAULT OFF)
 elseif(ASCEND_SUPPORT)
   set(APPLE_SUPPORT_DEFAULT OFF)
   set(NVIDIA_SUPPORT_DEFAULT OFF)
@@ -85,6 +90,7 @@ elseif(ASCEND_SUPPORT)
   set(ASCEND_SUPPORT_DEFAULT ON)
   set(METAX_SUPPORT_DEFAULT OFF)
   set(IXML_SUPPORT_DEFAULT OFF)
+  set(GAUDI_SUPPORT_DEFAULT OFF)
 else()
   set(APPLE_SUPPORT_DEFAULT OFF)
   set(NVIDIA_SUPPORT_DEFAULT ON)
@@ -98,6 +104,11 @@ else()
   set(ASCEND_SUPPORT_DEFAULT OFF)
   set(METAX_SUPPORT_DEFAULT ON)
   set(IXML_SUPPORT_DEFAULT ON)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(GAUDI_SUPPORT_DEFAULT ON)
+  else()
+    set(GAUDI_SUPPORT_DEFAULT OFF)
+  endif()
 endif()
 
 # TPU and Enflame GCU support is only available on Linux
@@ -119,6 +130,28 @@ else()
   set(ENFLAME_SUPPORT_DEFAULT OFF)
 endif()
 
+if(HLTOP_GAUDI_ONLY)
+  set(APPLE_SUPPORT_DEFAULT OFF)
+  set(NVIDIA_SUPPORT_DEFAULT OFF)
+  set(AMDGPU_SUPPORT_DEFAULT OFF)
+  set(RADEON_SUPPORT_DEFAULT OFF)
+  set(INTEL_SUPPORT_DEFAULT OFF)
+  set(V3D_SUPPORT_DEFAULT OFF)
+  set(MSM_SUPPORT_DEFAULT OFF)
+  set(PANFROST_SUPPORT_DEFAULT OFF)
+  set(PANTHOR_SUPPORT_DEFAULT OFF)
+  set(ASCEND_SUPPORT_DEFAULT OFF)
+  set(TPU_SUPPORT_DEFAULT OFF)
+  set(ROCKCHIP_SUPPORT_DEFAULT OFF)
+  set(METAX_SUPPORT_DEFAULT OFF)
+  set(ENFLAME_SUPPORT_DEFAULT OFF)
+  set(TENSTORRENT_SUPPORT_DEFAULT OFF)
+  set(IXML_SUPPORT_DEFAULT OFF)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(GAUDI_SUPPORT_DEFAULT ON)
+  endif()
+endif()
+
 # Rockchip support is only available on Linux on arm
 # Enable Rockchip support only on ARM Linux
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
@@ -132,6 +165,13 @@ endif()
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(TENSTORRENT_SUPPORT_DEFAULT ON)
 else()
+  set(TENSTORRENT_SUPPORT_DEFAULT OFF)
+endif()
+
+# The architecture-specific defaults above are calculated independently, so
+# apply the Gaudi-only policy last.
+if(HLTOP_GAUDI_ONLY)
+  set(ROCKCHIP_SUPPORT_DEFAULT OFF)
   set(TENSTORRENT_SUPPORT_DEFAULT OFF)
 endif()
 
@@ -151,6 +191,7 @@ option(METAX_SUPPORT "Build support for MetaX GPUs through libmxsml" ${METAX_SUP
 option(ENFLAME_SUPPORT "Build support for Enflame GCUs through libefml" ${ENFLAME_SUPPORT_DEFAULT})
 option(TENSTORRENT_SUPPORT "Build support for Tenstorrent accelerators through tt-kmd" ${TENSTORRENT_SUPPORT_DEFAULT})
 option(IXML_SUPPORT "Build support for Iluvatar CoreX GPUs through libixml" ${IXML_SUPPORT_DEFAULT})
+option(GAUDI_SUPPORT "Build support for Intel Gaudi accelerators through hl-smi" ${GAUDI_SUPPORT_DEFAULT})
 
 add_subdirectory(src)
 
@@ -162,17 +203,17 @@ string(TIMESTAMP TODAY_MANPAGE "%B %Y")
 string(TIMESTAMP TODAY_ISO_8601 "%Y-%m-%d")
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/manpage/nvtop.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/manpage/nvtop"
+  "${CMAKE_CURRENT_BINARY_DIR}/manpage/hltop"
   IMMEDIATE @ONLY)
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/desktop/nvtop.metainfo.xml.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/desktop/io.github.syllo.nvtop.metainfo.xml"
+  "${CMAKE_CURRENT_BINARY_DIR}/desktop/io.github.jchen_318.hltop.metainfo.xml"
   IMMEDIATE @ONLY)
 install(FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/manpage/nvtop"
+  "${CMAKE_CURRENT_BINARY_DIR}/manpage/hltop"
   DESTINATION share/man/man1/
   PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
-  RENAME nvtop.1)
+  RENAME hltop.1)
 install(FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/desktop/nvtop.svg"
   DESTINATION share/icons/hicolor/scalable/apps
@@ -180,11 +221,32 @@ install(FILES
 install(FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/desktop/nvtop.desktop"
   DESTINATION share/applications
-  PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+  PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+  RENAME hltop.desktop)
 install(FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/desktop/io.github.syllo.nvtop.metainfo.xml"
+  "${CMAKE_CURRENT_BINARY_DIR}/desktop/io.github.jchen_318.hltop.metainfo.xml"
   DESTINATION share/metainfo
   PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+
+#///////////////////////////////////////////////////////////////////#
+#                         DEBIAN PACKAGE                            #
+#///////////////////////////////////////////////////////////////////#
+
+set(CPACK_GENERATOR "DEB")
+set(CPACK_PACKAGE_NAME "hltop")
+set(CPACK_PACKAGE_VENDOR "JChen-318")
+set(CPACK_PACKAGE_CONTACT "JChen-318@users.noreply.github.com")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Interactive Intel Gaudi accelerator monitor")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/JChen-318/hltop")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "JChen-318")
+set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/JChen-318/hltop")
+include(CPack)
 
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"

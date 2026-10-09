@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>hltop APT repository</title>
+    <style>
+      body { max-width: 860px; margin: 3rem auto; padding: 0 1rem; font: 16px/1.5 system-ui, sans-serif; }
+      pre { overflow-x: auto; padding: 1rem; background: #f4f4f4; border-radius: .5rem; }
+    </style>
+  </head>
+  <body>
+    <h1>hltop APT repository</h1>
+    <p>Signed amd64 packages for Ubuntu 22.04 and 24.04.</p>
+    <pre>curl -fsSL https://jchen-318.github.io/hltop/hltop-archive-keyring.gpg \
+  | sudo tee /usr/share/keyrings/hltop-archive-keyring.gpg &gt;/dev/null
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hltop-archive-keyring.gpg] https://jchen-318.github.io/hltop stable main" \
+  | sudo tee /etc/apt/sources.list.d/hltop.list
+sudo apt update
+sudo apt install hltop</pre>
+    <p>The Intel Gaudi software stack and <code>hl-smi</code> must already be installed.</p>
+  </body>
+</html>

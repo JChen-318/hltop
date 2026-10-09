@@ -1,4 +1,15 @@
 find_package(GTest)
+
+if(BUILD_TESTING)
+  add_executable(hlSmiParserTests
+    hlSmiParserTests.c
+    ${PROJECT_SOURCE_DIR}/src/hl_smi_parser.c)
+  target_include_directories(hlSmiParserTests PRIVATE ${PROJECT_SOURCE_DIR}/include)
+  set_property(TARGET hlSmiParserTests PROPERTY C_STANDARD 11)
+  target_compile_definitions(hlSmiParserTests PRIVATE _GNU_SOURCE)
+  add_test(NAME hlSmiParserTests COMMAND hlSmiParserTests)
+endif()
+
 if (BUILD_TESTING AND GTest_FOUND)
 
   option(THOROUGH_TESTING "Enable extensive testing (takes hours, e.g., use once per release)" OFF)

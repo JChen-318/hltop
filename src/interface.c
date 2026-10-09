@@ -1142,7 +1142,7 @@ static void draw_devices(struct list_head *devices, struct nvtop_interface *inte
     else if (GPUINFO_DYNAMIC_FIELD_VALID(&device->dynamic_info, mem_clock_speed_max))
       mvwprintw(dev->mem_clock_info, 0, 0, "%s %uMHz", mem_label, device->dynamic_info.mem_clock_speed_max);
     else
-      mvwprintw(dev->mem_clock_info, 0, 0, "%s N/A MHz", mem_label);
+      mvwprintw(dev->mem_clock_info, 0, 0, "%s N/A", mem_label);
     mvwchgat(dev->mem_clock_info, 0, 0, 3, 0, cyan_color, NULL);
     wnoutrefresh(dev->mem_clock_info);
 

@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=nvtop
-GenericName=GPU Process Monitor
+Name=hltop
+GenericName=Intel Gaudi Process Monitor
 Type=Application
 Terminal=true
-Exec=nvtop
+Exec=hltop
 Icon=nvtop
 Categories=System;Monitor;
 X-AppImage-Integrate=false

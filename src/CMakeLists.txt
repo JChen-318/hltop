@@ -211,6 +211,11 @@ if(IXML_SUPPORT)
   target_sources(nvtop PRIVATE extract_gpuinfo_ixml.c)
 endif()
 
+if(GAUDI_SUPPORT)
+  message(STATUS "Building with Intel Gaudi AIP support through hl-smi")
+  target_sources(nvtop PRIVATE extract_gpuinfo_gaudi.c hl_smi_parser.c)
+endif()
+
 target_include_directories(nvtop PRIVATE
   ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_BINARY_DIR}/include)
@@ -220,6 +225,7 @@ find_package(Sanitizers)
 add_sanitizers(nvtop)
 
 set_property(TARGET nvtop PROPERTY C_STANDARD 11)
+set_property(TARGET nvtop PROPERTY OUTPUT_NAME hltop)
 
 target_compile_definitions(nvtop PRIVATE _GNU_SOURCE)
 

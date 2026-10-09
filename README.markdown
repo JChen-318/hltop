@@ -1,5 +1,50 @@
-NVTOP
-=====
+HLTOP (Intel Gaudi fork)
+=======================
+
+`hltop` keeps nvtop's ncurses interface and keyboard controls, while adding an
+Intel Gaudi backend driven by the `hl-smi` tool included with the Gaudi software
+stack. It has been designed for the HL-SMI 1.24 format and Gaudi2/HL-225.
+
+Displayed metrics include AIP utilization, HBM allocation, temperature, power,
+SoC clock, PCIe link state, uncorrected ECC events, and compute processes when
+HL-SMI reports them. The existing F2 setup screen, plots, sorting, process view,
+and update interval remain unchanged. Metrics reported as `N/A` by HL-SMI are
+left unavailable instead of being displayed as zero.
+
+Build on the Gaudi host:
+
+```bash
+sudo apt install build-essential cmake libncurses-dev
+cmake -S . -B build -DGAUDI_SUPPORT=ON
+cmake --build build -j
+sudo cmake --install build
+hltop
+```
+
+Install from the signed APT repository (Ubuntu 22.04/24.04, amd64):
+
+```bash
+curl -fsSL https://jchen-318.github.io/hltop/hltop-archive-keyring.gpg \
+  | sudo tee /usr/share/keyrings/hltop-archive-keyring.gpg >/dev/null
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hltop-archive-keyring.gpg] https://jchen-318.github.io/hltop stable main" \
+  | sudo tee /etc/apt/sources.list.d/hltop.list
+sudo apt update
+sudo apt install hltop
+```
+
+The Intel Gaudi software stack and `hl-smi` must already be installed on the
+target machine. Release `.deb` files are also available from the GitHub
+[Releases](https://github.com/JChen-318/hltop/releases) page.
+
+The default build is Gaudi-only and therefore does not require CUDA, NVML, or
+libdrm. Pass `-DHLTOP_GAUDI_ONLY=OFF` to restore the original multi-vendor
+defaults. At runtime, `hl-smi` must be available in `PATH` and usable by the
+current account.
+
+The code below is the original upstream documentation retained for reference.
+
+NVTOP upstream
+==============
 
 What is NVTOP?
 --------------

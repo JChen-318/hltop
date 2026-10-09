@@ -82,7 +82,7 @@ static const char helpstring[] = "Available options:\n"
                                  "(useful for scripting)\n"
                                  "  -l --loop                 : Output the current gpu stats without ncurses in a loop\n";
 
-static const char versionString[] = "nvtop version " NVTOP_VERSION_STRING;
+static const char versionString[] = "hltop version " NVTOP_VERSION_STRING;
 
 // Backends that provide HVX/HMX metrics get the NPU-specific default plots.
 static const char *const npu_plot_vendor_names[] = {"QCOM-NPU"};

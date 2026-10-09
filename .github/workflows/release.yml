@@ -1,0 +1,117 @@
+name: Release and APT repository
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: hltop-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libncurses-dev
+
+      - name: Configure
+        run: >-
+          cmake -S . -B build
+          -DGAUDI_SUPPORT=ON
+          -DHLTOP_GAUDI_ONLY=ON
+          -DBUILD_TESTING=ON
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build and test
+        run: |
+          cmake --build build -j "$(nproc)"
+          ctest --test-dir build --output-on-failure
+
+      - name: Build Debian package
+        run: cpack --config build/CPackConfig.cmake -G DEB -B packages
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debian-package
+          path: packages/*.deb
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/*.deb
+          generate_release_notes: true
+
+  apt:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: debian-package
+          path: packages
+
+      - name: Install repository tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-utils dpkg-dev gnupg
+
+      - name: Import signing key
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        run: |
+          test -n "$APT_GPG_PRIVATE_KEY"
+          printf '%s' "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
+          KEY_ID="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "sec" {print $5; exit}')"
+          test -n "$KEY_ID"
+          echo "KEY_ID=$KEY_ID" >> "$GITHUB_ENV"
+
+      - name: Create signed APT repository
+        run: |
+          mkdir -p public/pool/main/h/hltop
+          mkdir -p public/dists/stable/main/binary-amd64
+          cp packages/*.deb public/pool/main/h/hltop/
+          cp packaging/apt/index.html public/index.html
+          gpg --batch --export "$KEY_ID" > public/hltop-archive-keyring.gpg
+
+          cd public
+          dpkg-scanpackages --arch amd64 pool /dev/null > dists/stable/main/binary-amd64/Packages
+          gzip -9 -k dists/stable/main/binary-amd64/Packages
+          apt-ftparchive \
+            -o APT::FTPArchive::Release::Origin=hltop \
+            -o APT::FTPArchive::Release::Label=hltop \
+            -o APT::FTPArchive::Release::Suite=stable \
+            -o APT::FTPArchive::Release::Codename=stable \
+            -o APT::FTPArchive::Release::Architectures=amd64 \
+            -o APT::FTPArchive::Release::Components=main \
+            release dists/stable > dists/stable/Release
+          gpg --batch --yes --default-key "$KEY_ID" \
+            --armor --detach-sign --output dists/stable/Release.gpg dists/stable/Release
+          gpg --batch --yes --default-key "$KEY_ID" \
+            --clearsign --output dists/stable/InRelease dists/stable/Release
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
